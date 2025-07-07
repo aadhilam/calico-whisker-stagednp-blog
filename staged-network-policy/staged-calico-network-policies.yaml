@@ -1,0 +1,89 @@
+apiVersion: projectcalico.org/v3
+kind: StagedNetworkPolicy
+metadata:
+  name: yaobank-dns
+  namespace: yaobank
+spec:
+  egress:
+    - action: Allow
+      protocol: UDP
+      destination:
+        ports:
+          - 53
+---
+apiVersion: projectcalico.org/v3
+kind: StagedNetworkPolicy
+metadata:
+  name: database
+  namespace: yaobank
+spec:
+  selector: app == 'database'
+  ingress:
+    - action: Allow
+      protocol: TCP
+      source:
+        selector: app == 'summary'
+      destination:
+        ports:
+          - 2379
+  egress:
+    - action: Allow
+---
+apiVersion: projectcalico.org/v3
+kind: StagedNetworkPolicy
+metadata:
+  name: summary
+  namespace: yaobank
+spec:
+  selector: app == 'summary'
+  ingress:
+    - action: Allow
+      protocol: TCP
+      source:
+        selector: app == 'customer'
+      destination:
+        ports:
+          - 80
+  egress:
+    - action: Allow
+      protocol: TCP
+      destination:
+        selector: app == 'database'
+        ports:
+          - 2279
+---
+apiVersion: projectcalico.org/v3
+kind: StagedNetworkPolicy
+metadata:
+  name: customer
+  namespace: yaobank
+spec:
+  selector: app == 'customer'
+  ingress:
+    - action: Allow
+      protocol: TCP
+      destination:
+        ports:
+          - 80
+  egress:
+    - action: Allow
+      protocol: TCP
+      destination:
+        selector: app == 'summary'
+        ports:
+          - 80
+---
+apiVersion: projectcalico.org/v3
+kind: StagedNetworkPolicy
+metadata:
+  name: loadgenerator
+  namespace: yaobank
+spec:
+  selector: app == 'loadgenerator'
+  egress:
+    - action: Allow
+      protocol: TCP
+      destination:  
+        selector: app == 'customer'
+        ports:
+          - 80
